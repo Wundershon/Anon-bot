@@ -1,50 +1,45 @@
 import asyncio
 import time
 import os
-from aiogram import Bot, Dispatcher, F
+from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart
-from aiogram.types import Message
 
-TOKEN = os.getenv("BOT_TOKEN")
+TOKEN = os.getenv("TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
-
-SPAM_TIMEOUT = 120
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 last_message_time = {}
+COOLDOWN = 120
 
 @dp.message(CommandStart())
-async def start(message: Message):
+async def start(message: types.Message):
     await message.answer(
-        "👋 Привет!\n\n"
-        "Это анонимная предложка.\n"
-        "Пиши сюда сообщения — я их получу.\n\n"
-        "🔒 Полная анонимность."
+        "Привет 👋\n\nПросто напиши сообщение, и оно будет доставлено."
     )
 
-@dp.message(F.text)
-async def handler(message: Message):
+@dp.message()
+async def handle(message: types.Message):
     user_id = message.from_user.id
     now = time.time()
 
     if user_id in last_message_time:
-        if now - last_message_time[user_id] < SPAM_TIMEOUT:
-            await message.answer("⏳ Подожди перед следующим сообщением.")
+        if now - last_message_time[user_id] < COOLDOWN:
             return
 
     last_message_time[user_id] = now
 
+    text = message.text or "📎 Медиа-сообщение"
+
     await bot.send_message(
         ADMIN_ID,
-        f"📩 Анонимное сообщение:\n\n{message.text}"
+        f"📩 Новое сообщение:\n\n{text}"
     )
 
-    await message.answer("✅ Отправлено!")
+    await message.answer("✅ Сообщение доставлено")
 
 async def main():
     await dp.start_polling(bot)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+asyncio.run(main())
